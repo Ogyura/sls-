@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VK ID Test</title>
+  <meta charset="UTF-8">
+</head>
+<body>
+  <div id="vk-container" style="width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center;">
+    <p>Загрузка VK ID...</p>
+  </div>
+
+  <script src="https://unpkg.com/@vkid/sdk@2.3.0/dist-sdk/umd/index.js"></script>
+  <script>
+    console.log("Script loaded, VKIDSDK:", window.VKIDSDK);
+    
+    if (window.VKIDSDK) {
+      const VKID = window.VKIDSDK;
+      
+      try {
+        VKID.Config.init({
+          app: 54525358,
+          redirectUrl: "http://localhost:3000",
+          responseMode: VKID.ConfigResponseMode.Callback,
+          source: VKID.ConfigSource.LOWCODE,
+          scope: "",
+        });
+        
+        console.log("Config initialized");
+        
+        const oAuth = new VKID.OAuthList();
+        const container = document.getElementById("vk-container");
+        container.innerHTML = "";
+        
+        oAuth.render({
+          container: container,
+          oauthList: ["vkid"],
+        })
+        .on(VKID.WidgetEvents.ERROR, function(error) {
+          console.error("VK ID Error:", error);
+          container.innerHTML = "<p style='color: red;'>Ошибка VK ID</p>";
+        })
+        .on(VKID.OAuthListInternalEvents.LOGIN_SUCCESS, function(payload) {
+          console.log("VK Login Success:", payload);
+          const code = payload.code;
+          const deviceId = payload.device_id;
+          
+          VKID.Auth.exchangeCode(code, deviceId)
+            .then(function(data) {
+              console.log("Exchange success:", data);
+              alert("VK Auth успешно! User ID: " + data.user_id);
+            })
+            .catch(function(error) {
+              console.error("Exchange error:", error);
+            });
+        });
+        
+        console.log("OAuth rendered");
+      } catch (e) {
+        console.error("VK Init Error:", e);
+        document.getElementById("vk-container").innerHTML = "<p style='color: red;'>Ошибка инициализации: " + e.message + "</p>";
+      }
+    } else {
+      console.error("VKIDSDK not found");
+      document.getElementById("vk-container").innerHTML = "<p style='color: red;'>VK SDK не загружен</p>";
+    }
+  </script>
+</body>
+</html>
